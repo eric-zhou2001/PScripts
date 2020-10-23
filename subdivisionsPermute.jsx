@@ -1,36 +1,3 @@
-/**
- * Important note: guides are stored in this collection/array that can be accessed by doing
- * activeDocument.app.guides. This returns an array, in which we can access certain guides
- * by array indexing (app.guides[i], for example if we are to iterate). The actual addition
- * or creation of a new guide is done like so:
- * 
- * app.guides.add([Direction, so HORIZONTAL vs. VERTICAL], [x/y positioning]);
- * 
- * Oddly enough, guides are sequentially with increasing index. Let's say we add this guide first:
- * 
- * (Direction.HORIZONTAL, 100)
- * 
- * This guide will be stored (assuming there are no other guides in the guide collection)
- * at guides[0], since it is the first guide. Let's say we now add this guide:
- * 
- * (Direction.HORIZONTAL, 200)
- * 
- * This guide will now be stored at guides[1], since there is already a guide stored at
- * guides[0]. By doing guides[0], we can still access the guide originally placed at
- * index 0 (in other words, the first guide inserted). This repeats itself onwards.
- * 
- * To remove the newest guide, we have to access the LAST guide in the guide collection
- * (as in, the most recent addition). So, we can do guides[guides.length - 1] to access
- * said guide. As long as we keep this in mind, the methods that interact with the
- * guides will be more or less straightforward.
- * 
- * Another note, the [insertSomeGuide].remove() method is sort of hidden in the actual
- * JavaScript Photoshop documentation. Therefore, I mainly stuck with this documentation:
- * https://theiviaxx.github.io/photoshop-docs/Photoshop/Guide.html
- */
-
-// preset subdivisions values. Index 0 corresponds to 1 subdivision, index 1 corresponds
-// to 2 subdivisions, etc...
 var subdivisions = [
     [ 0.382, 0.618, 1 ],
 
@@ -157,23 +124,23 @@ function numGuides(direction) {
 	return counter;
 }
 
-// scrollbar counters grouping
-var scrollbar1Counter = scrollbarCounterGroup.add("statictext",undefined,"1")
-scrollbar1.onChange = function() {
-    scrollbar1Counter.text = scrollbar1.value.toFixed();
-    var divisions = scrollbar1.value.toFixed();
-	var guides = app.activeDocument.guides;
-
-    var counter = numGuides(Direction.HORIZONTAL);
-    // If counter is 0, currDivisions is 0. no need to take logs.
-    if (counter != 0) {
-        var currDivisions = Math.log(counter) / Math.log(3);
+/**
+ * Adds the guides to the document. It's a little weird, since the guides are
+ * just making it super laggy. Basically, deletes everything then readds the 
+ * desired number of guides depending on the permutation.
+ * @param {PhotoShop Direction} dir 
+ * @param {Number of Divisions to Add} divisions 
+ */
+function addGuides(dir, divisions) {
+    var guides = app.activeDocument.guides;
+    if (dir == Direction.HORIZONTAL) {
+        var currDivs = currHorSubdivisions;
     } else {
-        var currDivisions = 0;
+        var currDivs = currVerSubdivisions;
     }
 
     // Why is this not appending anything? Debug this...
-	if (currDivisions == divisions) {
+	if (currDivs == divisions) {
 		// If the scroll bar is the same, we do not do anything.
 		return;
     }
@@ -181,7 +148,7 @@ scrollbar1.onChange = function() {
 
     // First, we delete all the existing subdivisions.
     for (var i = 0; i < guides.length; ++i) {
-        if (guides[i].direction == Direction.HORIZONTAL) {
+        if (guides[i].direction == dir) {
             guides[i].remove();
         }
     }
@@ -191,39 +158,35 @@ scrollbar1.onChange = function() {
         return;
     } else {
         var desiredSubdivisions = subdivisions[divisions - 1];
-        for (var i = 0; i < desiredSubdivisions; ++i) {
-            guides.add(Direction.HORIZONTAL, desiredSubdivisions[i]);
+        for (var i = 0; i < desiredSubdivisions.length; ++i) {
+            guides.add(dir, desiredSubdivisions[i] * docHeight);
+        }
+
+        if (dir == Direction.HORIZONTAL) {
+            var currHorSubdivisions = divisions;
+        } else {
+            var currVerSubdivisions = divisions;
         }
     }
 }
 
+// scrollbar counters grouping
+var currHorSubdivisions = 0;
+var docHeight = app.activeDocument.height;
+var scrollbar1Counter = scrollbarCounterGroup.add("statictext",undefined,"1")
+scrollbar1.onChange = function() {
+    scrollbar1Counter.text = scrollbar1.value.toFixed();
+    var divisions = scrollbar1.value.toFixed();
+    addGuides(Direction.HORIZONTAL, divisions);
+}
+
+var currVerSubdivisions = 0;
+var docWidth = app.activeDocument.width;
 var scrollbar2Counter = scrollbarCounterGroup.add("statictext",undefined,"1")
-var scrollbar2Array = [];
 scrollbar2.onChange = function() {
 	scrollbar2Counter.text = scrollbar2.value.toFixed()
-	var guides = app.activeDocument.guides;
-	var endGuides = scrollbar2.value.toFixed();
-	var initialGuides = numGuides(Direction.VERTICAL);
-
-	var numDivisions = initialGuides - endGuides;
-	if (numDivisions == 0) {
-		// If the scroll bar is the same, we do not do anything.
-		return;
-	} else if (numDivisions > 0) {
-		// If numDivisions is greater than zero, that means the num of initial guides is
-		// GREATER than the num of desired guides (end guides). Therefore, must remove
-		// some guides from document then.
-		var guidesToDelete = deleteGuides(Direction.VERTICAL, numDivisions);
-
-		for (var i = 0; i < guidesToDelete.length; ++i) {
-			guidesToDelete[i].remove();
-		}
-	} else {
-		numDivisions = Math.abs(numDivisions);
-		for (var i = 0; i < numDivisions; ++i) {
-			guides.add(Direction.VERTICAL, 30 * (initialGuides + 1));
-		}
-	}
+    var divisions = scrollbar2.value.toFixed();
+    addGuides(Direction.VERTICAL, divisions);
 }
 // dropdown menu
 var dropDown = dropDownGroup.add("dropdownlist",undefined,["Diamond","Platinum","Golden","Silver","Bronze"]);
