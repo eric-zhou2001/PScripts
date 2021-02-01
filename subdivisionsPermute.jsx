@@ -132,6 +132,9 @@ function numGuides(direction) {
  * @param {Number of Divisions to Add} divisions 
  */
 function addGuides(dir, divisions) {
+    var docWidth = app.activeDocument.width;
+    var docHeight = app.activeDocument.height;
+    alert(docWidth);
     var guides = app.activeDocument.guides;
     if (dir == Direction.HORIZONTAL) {
         var currDivs = currHorSubdivisions;
@@ -181,7 +184,6 @@ scrollbar1.onChange = function() {
 }
 
 var currVerSubdivisions = 0;
-var docWidth = app.activeDocument.width;
 var scrollbar2Counter = scrollbarCounterGroup.add("statictext",undefined,"1")
 scrollbar2.onChange = function() {
 	scrollbar2Counter.text = scrollbar2.value.toFixed()
@@ -197,6 +199,7 @@ dropDown.selection = 2;
 
 var exitButton = exitButtonGroup.add("button",undefined,"Exit Script");
 
+// For debugging.
 exitButton.onClick = function close(){
   var guides = app.activeDocument.guides;
   var s = "";
